@@ -47,29 +47,29 @@ matrix:
     include:
 
         # Check for sphinx doc build warnings - we do this first because it
-        # may run for a long time
-        - os: linux
-          env: SETUP_CMD='install build_sphinx -w' # install needed for nbsphinx to run
-
-        - os: linux
-          env: SETUP_CMD='test --coverage'
-
-        # Try Astropy development version
-        - os: linux
-          env: ASTROPY_VERSION=development
-
-        # Try Numpy development version
-        - os: linux
-          env: NUMPY_VERSION=development
+        # # may run for a long time
+        # - os: linux
+        #   env: SETUP_CMD='install build_sphinx -w' # install needed for nbsphinx to run
+        #
+        # - os: linux
+        #   env: SETUP_CMD='test --coverage'
+        #
+        # # Try Astropy development version
+        # - os: linux
+        #   env: ASTROPY_VERSION=development
+        #
+        # # Try Numpy development version
+        # - os: linux
+        #   env: NUMPY_VERSION=development
 
         - os: linux
           env: PYTHON_VERSION=3.5
 
-        - os: linux
-          env: PYTHON_VERSION=3.7
-
-        - os: linux
-          env: SETUP_CMD='build --nogsl test'
+        # - os: linux
+        #   env: PYTHON_VERSION=3.7
+        #
+        # - os: linux
+        #   env: SETUP_CMD='build --nogsl test'
 
 before_install:
 
@@ -82,6 +82,8 @@ install:
     - git clone git://github.com/astropy/ci-helpers.git
     - source ci-helpers/travis/setup_conda.sh
     - conda install -c conda-forge pandoc
+    - gsl-config --version
+    - gsl-config --prefix
 
 script:
     - $MAIN_CMD $SETUP_CMD
