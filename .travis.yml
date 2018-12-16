@@ -64,7 +64,7 @@ matrix:
         #   env: NUMPY_VERSION=development
 
         - os: linux
-          env: PYTHON_VERSION=3.5
+          env: PYTHON_VERSION=3.5 SETUP_CMD='test -a "-s" '
 
         # - os: linux
         #   env: PYTHON_VERSION=3.7
