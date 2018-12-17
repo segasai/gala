@@ -37,7 +37,7 @@ env:
 
     matrix:
         # Make sure that egg_info works without dependencies
-        - SETUP_CMD='egg_info'
+        # - SETUP_CMD='egg_info'
         # Try all python versions with the latest numpy
         - SETUP_CMD='test'
 
@@ -72,9 +72,6 @@ matrix:
         # - os: linux
         #   env: SETUP_CMD='build --nogsl test'
 
-        - os: linux
-          env: SETUP_CMD='test -a "-s -k PowerLaw"'
-
 before_install:
 
     # If there are matplotlib tests, comment these out to
@@ -90,7 +87,7 @@ install:
     - gsl-config --prefix
 
 script:
-    - $MAIN_CMD $SETUP_CMD
+    - $MAIN_CMD test -a '-s -k PowerLaw'
 
 after_success:
     # If coveralls.io is set up for this package, uncomment the line
