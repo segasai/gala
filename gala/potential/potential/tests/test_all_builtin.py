@@ -115,10 +115,14 @@ class TestStone(PotentialTestBase):
     potential = StonePotential(units=galactic, m=1E11, r_c=0.1, r_h=10.)
     w0 = [8.,0.,0.,0.,0.18,0.1]
 
-class TestPowerLawCutoff(PotentialTestBase):
+# class TestPowerLawCutoff(PotentialTestBase):
+#     potential = PowerLawCutoffPotential(units=galactic, m=1E10, r_c=1., alpha=1.8)
+#     w0 = [8.,0.,0.,0.,0.1,0.1]
+#     atol = 1e-3
+
+def test_PowerLaw():
     potential = PowerLawCutoffPotential(units=galactic, m=1E10, r_c=1., alpha=1.8)
-    w0 = [8.,0.,0.,0.,0.1,0.1]
-    atol = 1e-3
+    print(potential.value([8., 0, 0]))
 
 class TestSphericalNFW(PotentialTestBase):
     potential = NFWPotential(units=galactic, m=1E11, r_s=12.)

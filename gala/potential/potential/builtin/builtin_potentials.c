@@ -406,6 +406,9 @@ double powerlawcutoff_value(double t, double *pars, double *q, int n_dim) {
     double r;
     r = sqrt(q[0]*q[0] + q[1]*q[1] + q[2]*q[2]);
 
+    printf("%f %f\n\n", gsl_sf_gamma((3.-pars[2]) / 2),
+           gsl_sf_gamma_inc_P((3.-pars[2]) / 2, r*r/(pars[3]*pars[3])));
+
     if (r == 0.) {
         return -INFINITY;
     } else {
