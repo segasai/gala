@@ -8,12 +8,13 @@
 # Third-party
 import numpy as np
 
-from ...potential import Hamiltonian, NullPotential
+from ...potential import Hamiltonian, NullPotential, StaticFrame
 from ...units import UnitSystem
+from ...util import atleast_2d
 from ...integrate.timespec import parse_time_specification
 from .. import Orbit, PhaseSpacePosition
 
-from ._nbody import _direct_nbody_dop853
+from .nbody import direct_nbody_dop853
 
 __all__ = ['DirectNBody']
 
@@ -21,12 +22,12 @@ __all__ = ['DirectNBody']
 class DirectNBody:
 
     def __init__(self, w0, particle_potentials, external_potential=None,
-                 units=None):
+                 frame=None, units=None, save_all=True):
         """Perform orbit integration using direct N-body forces between
         particles, optionally in an external background potential.
 
-        TODO: could add another option, like in other contexts, for "extra_force"
-        to support, e.g., dynamical friction
+        TODO: could add another option, like in other contexts, for
+        "extra_force" to support, e.g., dynamical friction
 
         Parameters
         ----------
@@ -38,9 +39,14 @@ class DirectNBody:
         external_potential : `~gala.potential.PotentialBase` subclass instance (optional)
             The background or external potential to integrate the particle
             orbits in.
+        frame : :class:`~gala.potential.frame.FrameBase` subclass (optional)
+            The reference frame to perform integratiosn in.
         units : `~gala.units.UnitSystem` (optional)
             Set of non-reducable units that specify (at minimum) the
             length, mass, time, and angle units.
+        save_all : bool (optional)
+            Save the full orbits of each particle. If ``False``, only returns
+            the final phase-space positions of each particle.
 
         """
         if not isinstance(w0, PhaseSpacePosition):
@@ -48,16 +54,17 @@ class DirectNBody:
                             "gala.dynamics.PhaseSpacePosition object, "
                             "not '{}'".format(w0.__class__.__name__))
 
-        nbodies = w0.shape[0]
-        if not nbodies == len(particle_potentials):
-            raise ValueError("The number of initial conditions in `w0` must "
-                             "match the number of particle potentials passed "
-                             "in with `particle_potentials`.")
+        if len(w0.shape) > 0:
+            if w0.shape[0] != len(particle_potentials):
+                raise ValueError("The number of initial conditions in `w0` must"
+                                 " match the number of particle potentials "
+                                 "passed in with `particle_potentials`.")
 
-        # TODO: this is a MAJOR HACK
-        if nbodies > 65536: # see MAX_NBODY in _nbody.pyx
-            raise NotImplementedError("We currently only support direct N-body "
-                                      "integration for <= 65536 particles.")
+            # TODO: this is a MAJOR HACK
+            if w0.shape[0] > 65536: # see MAX_NBODY in _nbody.pyx
+                raise NotImplementedError("We currently only support direct "
+                                          "N-body integration for <= 65536 "
+                                          "particles.")
 
         # First, figure out how to get units - first place to check is the arg
         if units is None:
@@ -87,30 +94,44 @@ class DirectNBody:
             if pp is None:
                 pp = NullPotential(units)
             else:
-                pp = pp.replace_units(units, copy=True)
+                pp = pp.replace_units(units)
             _particle_potentials.append(pp)
 
         if external_potential is None:
             external_potential = NullPotential(units)
         else:
-            external_potential = external_potential.replace_units(units,
-                                                                  copy=True)
+            external_potential = external_potential.replace_units(units)
+
+        if frame is None:
+            frame = StaticFrame(units)
 
         self.w0 = w0
         self.units = units
         self.external_potential = external_potential
+        self.frame = frame
         self.particle_potentials = _particle_potentials
+        self.save_all = save_all
 
-        # This currently only supports non-rotating frames
-        self._ext_ham = Hamiltonian(self.external_potential)
-        if not self._ext_ham.c_enabled:
+        self.H = Hamiltonian(self.external_potential,
+                             frame=self.frame)
+        if not self.H.c_enabled:
             raise ValueError("Input potential must be C-enabled: one or more "
                              "components in the input external potential are "
                              "Python-only.")
 
+        # cache the position and velocity / prepare the initial conditions
+        self._pos = atleast_2d(self.w0.xyz.decompose(self.units).value,
+                               insert_axis=1)
+        self._vel = atleast_2d(self.w0.v_xyz.decompose(self.units).value,
+                               insert_axis=1)
+        self._w0 = np.ascontiguousarray(np.vstack((self._pos, self._vel)).T)
+
     def __repr__(self):
-        return "<{} bodies={}>".format(self.__class__.__name__,
-                                       self.w0.shape[0])
+        if self.w0.shape:
+            return "<{} bodies={}>".format(self.__class__.__name__,
+                                           self.w0.shape[0])
+        else:
+            return "<{} bodies=1>".format(self.__class__.__name__)
 
     def integrate_orbit(self, **time_spec):
         """
@@ -132,22 +153,30 @@ class DirectNBody:
 
         """
 
-        # Prepare the initial conditions
-        pos = self.w0.xyz.decompose(self.units).value
-        vel = self.w0.v_xyz.decompose(self.units).value
-        w0 = np.ascontiguousarray(np.vstack((pos, vel)).T)
-
         # Prepare the time-stepping array
         t = parse_time_specification(self.units, **time_spec)
 
-        ws = _direct_nbody_dop853(w0, t, self._ext_ham,
-                                  self.particle_potentials)
-        pos = np.rollaxis(np.array(ws[..., :3]), axis=2)
-        vel = np.rollaxis(np.array(ws[..., 3:]), axis=2)
+        ws = direct_nbody_dop853(self._w0, t, self.H,
+                                 self.particle_potentials,
+                                 save_all=self.save_all)
 
-        orbits = Orbit(
-            pos=pos * self.units['length'],
-            vel=vel * self.units['length'] / self.units['time'],
-            t=t * self.units['time'])
+        if self.save_all:
+            pos = np.rollaxis(np.array(ws[..., :3]), axis=2)
+            vel = np.rollaxis(np.array(ws[..., 3:]), axis=2)
+
+            orbits = Orbit(
+                pos=pos * self.units['length'],
+                vel=vel * self.units['length'] / self.units['time'],
+                t=t * self.units['time'],
+                hamiltonian=self.H)
+
+        else:
+            pos = np.array(ws[..., :3]).T
+            vel = np.array(ws[..., 3:]).T
+
+            orbits = PhaseSpacePosition(
+                pos=pos * self.units['length'],
+                vel=vel * self.units['length'] / self.units['time'],
+                frame=self.frame)
 
         return orbits

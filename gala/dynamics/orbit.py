@@ -32,18 +32,18 @@ class Orbit(PhaseSpacePosition):
     velocity, they are assumed to be Cartesian. Array inputs are interpreted as
     dimensionless quantities. The input position and velocity objects can have
     an arbitrary number of (broadcastable) dimensions. For Quantity or array
-    inputs, the first axes have special meaning::
+    inputs, the first axes have special meaning:
 
-        - `axis=0` is the coordinate dimension (e.g., x, y, z)
-        - `axis=1` is the time dimension
+        - ``axis=0`` is the coordinate dimension (e.g., x, y, z)
+        - ``axis=1`` is the time dimension
 
-    So if the input position array, `pos`, has shape `pos.shape = (3, 100)`,
-    this would be a 3D orbit at 100 times (`pos[0]` is `x`, `pos[1]` is `y`,
-    etc.). For representing multiple orbits, the position array could have 3
-    axes, e.g., it might have shape `pos.shape = (3, 100, 8)`, where this is
-    interpreted as a 3D position at 100 times for 8 different orbits. The same
-    is true for velocity. The position and velocity arrays must have the same
-    shape.
+    So if the input position array, ``pos``, has shape ``pos.shape = (3, 100)``,
+    this would be a 3D orbit at 100 times (``pos[0]`` is ``x``, ``pos[1]``` is
+    ``y``, etc.). For representing multiple orbits, the position array could
+    have 3 axes, e.g., it might have shape `pos.shape = (3, 100, 8)`, where this
+    is interpreted as a 3D position at 100 times for 8 different orbits. The
+    same is true for velocity. The position and velocity arrays must have the
+    same shape.
 
     If a time argument is specified, the position and velocity arrays must have
     the same number of timesteps as the length of the time object::
@@ -662,12 +662,10 @@ class Orbit(PhaseSpacePosition):
         if radial:
             r = self.physicsspherical.r.value
             if self.norbits == 1:
-                T = peak_to_peak_period(self.t.value, r)
-                T = T * self.t.unit
+                T = u.Quantity(peak_to_peak_period(self.t, r))
             else:
-                T = [peak_to_peak_period(self.t.value, r[:,n])
-                     for n in range(r.shape[1])]
-                T = T * self.t.unit
+                T = u.Quantity([peak_to_peak_period(self.t, r[:, n])
+                                for n in range(r.shape[1])])
 
         else:
             raise NotImplementedError("sorry 'bout that...")
@@ -903,6 +901,12 @@ class Orbit(PhaseSpacePosition):
 
         kw = kwargs.copy()
 
+        # TODO: this short-circuit sux
+        if current_frame is None:
+            current_frame = self.frame
+        if frame == current_frame and not kwargs:
+            return self
+
         # TODO: need a better way to do this!
         from ..potential.frame.builtin import ConstantRotatingFrame
         for fr in [frame, current_frame, self.frame]:
@@ -910,6 +914,7 @@ class Orbit(PhaseSpacePosition):
                 if 't' not in kw:
                     kw['t'] = self.t
 
+        # TODO: this needs a re-write...
         psp = super(Orbit, self).to_frame(frame, current_frame, **kw)
 
         return Orbit(pos=psp.pos, vel=psp.vel, t=self.t,

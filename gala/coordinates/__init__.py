@@ -3,10 +3,11 @@ from .orphan import *
 from .gd1 import *
 from .oph import *
 from .pal5 import *
+from .jhelum import *
 from .velocity_frame_transforms import *
 from .poincarepolar import *
-from .quaternion import *
 from .magellanic_stream import *
 from .reflex import *
 from .greatcircle import *
 from .pm_cov_transform import *
+from .galactocentric import get_galactocentric2019

@@ -8,12 +8,22 @@ New Features
   existing instance.
 - Added a ``DirectNBody`` class that supports direct N-body orbit integration in
   (optional) external background potentials.
+- Added a coordinate frame for the Jhelum stream, ``JhelumBonaca19``.
+- Added a function for retrieving a more modern Galactocentric reference frame,
+  ``gala.coordinates.get_galactocentric2019()``.
 
 Bug fixes
 ---------
+- Fixed an issue that led to incorrect ``GreatCircleICRSFrame`` transformations
+  when no ``ra0`` was provided.
 
 API changes
 -----------
+- Overhauled the mock stellar stream generation methodology to allow for more
+  general stream generation. See ``MockStreamGenerator`` and the stream
+  distribution function classes, e.g., ``FardalStreamDF``.
+- Removed deprecated ``CartesianPhaseSpacePosition`` class.
+- Removed long deprecated ``Quaternion`` class.
 
 
 1.0 (2019-04-12)
