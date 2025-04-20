@@ -626,6 +626,11 @@ cdef class ChenStreamDF(BaseStreamDF):
         cov[4, 0] = -4.9
 
         j = 0
+	
+        cov[3,3] = 1
+        chol = np.linalg.cholesky(cov)
+        chol[3,:] = 0
+        chol[:,3] = 0    
         for i in range(ntimes):
             if prog_m[i] == 0:
                 continue
@@ -636,9 +641,11 @@ cdef class ChenStreamDF(BaseStreamDF):
 
             # trailing tail
             if self._trail == 1:
+                posvel0 = mean + self.random_state.normal(size=(nparticles[i], 6)) @ chol.T
                 for k in range(nparticles[i]):
+                    posvel = posvel0[k]
                     # calculate the ejection position and velocity
-                    posvel = self.random_state.multivariate_normal(mean, cov)
+                    # posvel = self.random_state.multivariate_normal(mean, cov)
 
                     Dr = posvel[0] * rj
                     Dv = posvel[3] * sqrt(2*G*prog_m[i]/Dr) # escape velocity
@@ -669,9 +676,12 @@ cdef class ChenStreamDF(BaseStreamDF):
 
             # Leading tail
             if self._lead == 1:
+                posvel0 = mean + self.random_state.normal(size=(nparticles[i], 6)) @ chol.T
+
                 for k in range(nparticles[i]):
                     # calculate the ejection position and velocity
-                    posvel = self.random_state.multivariate_normal(mean, cov)
+                    # posvel = self.random_state.multivariate_normal(mean, cov)
+                    posvel = posvel0[k]
 
                     Dr = posvel[0] * rj
                     Dv = posvel[3] * sqrt(2*G*prog_m[i]/Dr) # escape velocity
