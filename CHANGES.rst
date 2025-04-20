@@ -1,4 +1,17 @@
-1.1 (unreleased)
+1.2 (unreleased)
+================
+
+New Features
+------------
+
+Bug fixes
+---------
+
+API changes
+-----------
+
+
+1.1 (2020-03-08)
 ================
 
 New Features
@@ -11,11 +24,15 @@ New Features
 - Added a coordinate frame for the Jhelum stream, ``JhelumBonaca19``.
 - Added a function for retrieving a more modern Galactocentric reference frame,
   ``gala.coordinates.get_galactocentric2019()``.
+- Added a classmethod to allow initializing a ``GreatCircleICRSFrame`` from a
+  rotation matrix that specifies the transformation from ``ICRS`` to the great
+  circle frame.
 
 Bug fixes
 ---------
 - Fixed an issue that led to incorrect ``GreatCircleICRSFrame`` transformations
   when no ``ra0`` was provided.
+- Fixed a bug in the ``OrphanKoposov19`` tranasformation.
 
 API changes
 -----------

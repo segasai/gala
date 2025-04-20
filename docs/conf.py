@@ -61,7 +61,7 @@ exclude_patterns.append('_templates')
 
 # This is added to the end of RST files - a good place to put substitutions to
 # be used globally.
-rst_epilog += """
+rst_epilog = """
 """
 
 # Add sympy to intersphinx mapping
@@ -84,12 +84,14 @@ copyright = '{0}, {1}'.format(
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 
-import_module(setup_cfg['name'])
-package = sys.modules[setup_cfg['name']]
+# Note: For gala, the package name is different from the project name!
+package_name = 'gala'
+import_module(package_name)
+package = sys.modules[package_name]
 
 # TODO: Use Gala style when building docs
 mpl_style = None
-exec('from {0}.mpl_style import mpl_style'.format(setup_cfg['name']))
+exec('from {0}.mpl_style import mpl_style'.format(package_name))
 if mpl_style is not None:
     plot_rcparams = mpl_style
     plot_apply_rcparams = True
@@ -169,19 +171,6 @@ man_pages = [('index', project.lower(), project + u' Documentation',
 
 ## -- Options for the edit_on_github extension ----------------------------------------
 
-if eval(setup_cfg.get('edit_on_github')):
-    extensions += ['astropy_helpers.sphinx.ext.edit_on_github']
-
-    versionmod = __import__(setup_cfg['package_name'] + '.version')
-    edit_on_github_project = setup_cfg['github_project']
-    if versionmod.version.release:
-        edit_on_github_branch = "v" + versionmod.version.version
-    else:
-        edit_on_github_branch = "master"
-
-    edit_on_github_source_root = ""
-    edit_on_github_doc_root = "docs"
-
 # show inherited members for classes
 automodsumm_inherited_members = True
 
@@ -190,4 +179,4 @@ extensions += ['nbsphinx', 'IPython.sphinxext.ipython_console_highlighting']
 exclude_patterns += ['_build', '**.ipynb_checkpoints']
 
 # Custom setting for nbsphinx - timeout for executing one cell
-nbsphinx_timeout = 60
+nbsphinx_timeout = 300

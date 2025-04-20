@@ -1,5 +1,0 @@
-numpy>=1.15
-scipy>=1
-astropy>=3
-cython>=0.28
-pyyaml
